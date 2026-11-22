@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Трейдинг Калькулятор</title>
+    <!-- PWA / мобильные мета-теги -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1e3c72">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #1e3c72;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+
+        /* Переключатель направления */
+        .direction-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #f0f2f5;
+            padding: 6px;
+            border-radius: 12px;
+        }
+
+        .direction-toggle label {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            color: #666;
+            transition: all 0.25s;
+            margin: 0;
+            user-select: none;
+        }
+
+        .direction-toggle input { display: none; }
+
+        .direction-toggle input:checked + label {
+            background: #2a5298;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(42, 82, 152, 0.35);
+        }
+
+        .direction-toggle input#short + label:checked,
+        .direction-toggle input:checked + label.short-label {
+            background: #d32f2f;
+            box-shadow: 0 4px 12px rgba(211, 47, 47, 0.35);
+        }
+
+        .input-group { margin-bottom: 18px; }
+
+        label.field-label {
+            display: block;
+            margin-bottom: 6px;
+            color: #444;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus { outline: none; border-color: #2a5298; }
+
+        .hint { font-size: 12px; color: #888; margin-top: 4px; }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(42, 82, 152, 0.4);
+        }
+
+        button:active { transform: translateY(0); }
+
+        .results {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f5f7fa;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .results.show { display: block; }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-item:last-child { border-bottom: none; }
+
+        .result-label { color: #555; font-size: 14px; font-weight: 600; }
+
+        .result-value { font-size: 18px; font-weight: 700; color: #1e3c72; }
+
+        .result-value.highlight { color: #2a5298; font-size: 22px; }
+
+        .error {
+            color: #d32f2f;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: #ffebee;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .error.show { display: block; }
+
+        .warning {
+            color: #f57c00;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>📊 Калькулятор для трейдинга</h1>
+
+        <!-- Переключатель направления сделки -->
+        <div class="direction-toggle">
+            <input type="radio" name="direction" id="long" value="long" checked>
+            <label for="long" class="long-label">🔼 Лонг</label>
+
+            <input type="radio" name="direction" id="short" value="short">
+            <label for="short" class="short-label">🔽 Шорт</label>
+        </div>
+
+        <div class="input-group">
+            <label class="field-label" for="buyPrice">Цена входа</label>
+            <input type="number" id="buyPrice" step="0.00000001" min="0" placeholder="Например: 100" value="100">
+            <div class="hint">Цена актива на момент входа в сделку</div>
+        </div>
+
+        <div class="input-group">
+            <label class="field-label" for="stopPrice">Цена стоп-лосса</label>
+            <input type="number" id="stopPrice" step="0.00000001" min="0" placeholder="Например: 98" value="98">
+            <div class="hint" id="stopHint">Для лонга — ниже цены входа</div>
+        </div>
+
+        <div class="input-group">
+            <label class="field-label" for="riskAmount">Объем риска (в валюте)</label>
+            <input type="number" id="riskAmount" step="0.01" min="0" placeholder="Например: 100" value="100">
+            <div class="hint">Сколько денег вы готовы потерять при срабатывании стоп-лосса</div>
+        </div>
+
+        <div class="input-group">
+            <label class="field-label" for="lotSize">Объем лота (в единицах актива)</label>
+            <input type="number" id="lotSize" step="0.00000001" min="0" placeholder="Например: 1" value="1">
+            <div class="hint">Сколько единиц актива в одном лоте (для акций часто = 1)</div>
+        </div>
+
+        <button onclick="calculate()">Рассчитать</button>
+
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results">
+            <div class="result-item">
+                <span class="result-label">Стоп-лосс (%)</span>
+                <span class="result-value" id="stopPercent">—</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Риск на единицу актива</span>
+                <span class="result-value" id="riskPerUnit">—</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Количество лотов</span>
+                <span class="result-value highlight" id="lotsCount">—</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Сумма сделки</span>
+                <span class="result-value highlight" id="dealAmount">—</span>
+            </div>
+            <div class="warning" id="warning"></div>
+        </div>
+    </div>
+
+    <script>
+        // При смене направления обновляем подсказку
+        document.querySelectorAll('input[name="direction"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const isLong = document.getElementById('long').checked;
+                document.getElementById('stopHint').textContent = isLong
+                    ? 'Для лонга — ниже цены входа'
+                    : 'Для шорта — выше цены входа';
+                document.getElementById('results').classList.remove('show');
+            });
+        });
+
+        function calculate() {
+            const isLong = document.getElementById('long').checked;
+            const buyPrice = parseFloat(document.getElementById('buyPrice').value);
+            const stopPrice = parseFloat(document.getElementById('stopPrice').value);
+            const riskAmount = parseFloat(document.getElementById('riskAmount').value);
+            const lotSize = parseFloat(document.getElementById('lotSize').value);
+
+            const errorEl = document.getElementById('error');
+            const resultsEl = document.getElementById('results');
+            const warningEl = document.getElementById('warning');
+
+            errorEl.classList.remove('show');
+            warningEl.textContent = '';
+
+            // Валидация
+            if (isNaN(buyPrice) || isNaN(stopPrice) || isNaN(riskAmount) || isNaN(lotSize)) {
+                showError('Пожалуйста, заполните все поля корректными числами');
+                return;
+            }
+
+            if (buyPrice <= 0) {
+                showError('Цена входа должна быть больше 0');
+                return;
+            }
+
+            if (stopPrice <= 0) {
+                showError('Цена стоп-лосса должна быть больше 0');
+                return;
+            }
+
+            if (isLong && stopPrice >= buyPrice) {
+                showError('Для лонга цена стоп-лосса должна быть ниже цены входа');
+                return;
+            }
+
+            if (!isLong && stopPrice <= buyPrice) {
+                showError('Для шорта цена стоп-лосса должна быть выше цены входа');
+                return;
+            }
+
+            if (riskAmount <= 0) {
+                showError('Объем риска должен быть больше 0');
+                return;
+            }
+
+            if (lotSize <= 0) {
+                showError('Объем лота должен быть больше 0');
+                return;
+            }
+
+            // Расчеты (универсальны для лонга и шорта)
+            // Стоп-лосс в % = |цена входа - цена стопа| / цена входа * 100
+            const stopPercent = Math.abs(buyPrice - stopPrice) / buyPrice * 100;
+
+            // Риск на единицу актива (всегда положительный)
+            const riskPerUnit = Math.abs(buyPrice - stopPrice);
+
+            // Количество единиц актива
+            const unitsCount = riskAmount / riskPerUnit;
+
+            // Количество лотов
+            const lotsCount = unitsCount / lotSize;
+
+            // Сумма сделки = количество единиц * цена входа
+            const dealAmount = unitsCount * buyPrice;
+
+            // Вывод
+            document.getElementById('stopPercent').textContent = formatNumber(stopPercent) + ' %';
+            document.getElementById('riskPerUnit').textContent = formatNumber(riskPerUnit);
+            document.getElementById('lotsCount').textContent = formatNumber(lotsCount, 4);
+            document.getElementById('dealAmount').textContent = formatNumber(dealAmount);
+
+            // Предупреждения
+            if (stopPercent >= 50) {
+                warningEl.textContent = '⚠️ Стоп-лосс больше 50% — очень широкий стоп';
+            } else if (lotsCount < 1) {
+                warningEl.textContent = '⚠️ Количество лотов меньше 1 — проверьте параметры';
+            } else if (lotsCount % 1 !== 0) {
+                warningEl.textContent = '⚠️ Дробное количество лотов — уточните у брокера возможность дробных лотов';
+            }
+
+            resultsEl.classList.add('show');
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+            document.getElementById('results').classList.remove('show');
+        }
+
+        function formatNumber(num, decimals = 2) {
+            if (num === 0) return '0';
+            if (Math.abs(num) < 0.0001) {
+                return num.toExponential(4);
+            }
+            return num.toLocaleString('ru-RU', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: decimals
+            });
+        }
+
+        // Расчет по Enter
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') calculate();
+            });
+        });
+
+        // Автоматический расчет при загрузке
+        window.addEventListener('load', calculate);
+    </script>
+</body>
+</html>
